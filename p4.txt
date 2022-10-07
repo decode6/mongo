@@ -1,0 +1,200 @@
+use company
+
+depts = [
+    {
+      _id: "dept1", 
+      name: "Finance", 
+      place: "Bengaluru"
+    }, 
+    {
+      _id: "dept2", 
+      name: "HR",
+      place: "Mangaluru"
+    }, 
+    {
+      _id: "dept3", 
+      name: "Developement",
+      place: "Mysore"
+    }
+  ]
+db.createCollection("dept")
+db.dept.insertMany(depts)
+
+projects = [
+    {
+      _id:"p1", 
+      title: "Web Application", 
+      deptId: "dept1"
+    }, 
+    {
+      _id:"p2", 
+      title:"Attendence book", 
+      deptId: "dept2"
+    }, 
+    {
+      _id:"p3", 
+      title:"Social media", 
+      deptId:"dept3"
+    },
+    {
+      _id:"p4", 
+      title:"Chatting app", 
+      deptId:"dept2"
+    }
+  ]
+db.createCollection("project")
+db.project.insertMany(projects)
+
+employees = [
+      {
+        ssn: "s001", 
+        ename: "Manu",
+        gender: "male",
+        salary: 2000,
+        qualification: "BE",
+        exp: 5,
+        designation: "Senior SE",
+        deptId: "dept1", 
+        projects: [
+          {
+            projectId: "p1", 
+            nHours: 20
+          }
+        ]
+      }, 
+      {
+        ssn:"s006", 
+        ename: "Bhuvi",
+        gender: "female",
+        salary: 5000, 
+        qualification: "MCA",
+        exp:7, 
+        designation: "SE",
+        deptId:"dept2", 
+        projects:[
+          {
+            projectId: "p1",
+            nHours: 10
+          }, 
+          {
+            projectId:"p2",
+            nHours: 22
+          }
+        ]
+      }, 
+      {
+        ssn: "s004", 
+        ename: "Suresh",
+        gender: "male",
+        salary: 4000, 
+        qualification: "BCA",
+        exp: 4, 
+        designation: "Developer",
+        deptId:"dept3", 
+        projects:[
+          {
+            projectId: "p2",
+            nHours: 12
+          }, 
+          {
+            projectId: "p3",
+            nHours: 21
+          },
+          {
+            projectId: "p1",
+            nHours: 33
+          }
+        ]
+      }, 
+      {
+        ssn: "s002", 
+        ename: "Sam",
+        gender: "male", 
+        salary: 8000, 
+        qualification: "MCA",
+        exp: 2, 
+        designation: "Senior SE",
+        deptId:"dept1", 
+        projects:[
+          {
+            projectId: "p4",
+            nHours: 26
+          }
+        ]
+      }, 
+      {
+        ssn: "s005", 
+        ename: "Lilly",
+        gender: "female",
+        salary: 7000, 
+        qualification: "BE",
+        exp: 9, 
+        designation: "HR",
+        deptId:"dept2", 
+        projects:[
+          {
+            projectId: "p2",
+            nHours: 31
+          },
+          {
+            projectId: "p4",
+            nHours: 27
+          }
+        ]
+      },
+      {
+        ssn: "s003", 
+        ename: "Arya",
+        gender: "female",
+        salary: 9000, 
+        qualification: "MCA",
+        exp: 9, 
+        designation: "Developer",
+        deptId:"dept1", 
+        projects:[
+          {
+            projectId: "p4",
+            nHours: 22
+          }
+        ]
+      }
+    ]
+db.createCollection("employee")
+db.employee.insertMany(employees)
+
+2) Sort according to the ssn
+db.employee.find().sort({"ssn":1})
+
+3) List the employees who are working in finance department
+db.employee.find({deptId:db.dept.aggregate([{$match:{name:"Finance"}},{$project:{_id:1}}]).toArray()[0]._id})
+
+4) Find the employee who draws maximum salary
+db.employee.find({salary:db.employee.aggregate([{$group:{_id:null,maxsal:{$max:'$salary'}}}]).toArray()[0].maxsal})
+
+5) Update the record of the employee who has worked on maximum projects as "employee of the year"
+db.employee.update(
+    {_id:db.employee.aggregate(
+      [{$project:{count:{$size:'$projects'}}},{$sort:{'count':-1}}]).toArray()[0]._id},{$set:{"award":"Employee of the year"}
+    }
+  )
+
+6) Delet employee records who has minimum experience
+db.employee.deleteOne({exp:db.employee.aggregate([{$group:{_id:null,minExp:{$min:'$exp'}}}]).toArray()[0].minExp})
+
+Extra
+1) Retrieve the details of MALE employees whose designation is senior software engineer
+db.employee.find({$and: [{gender: "male"},{designation: "Senior SE"}]}).pretty()
+
+2) Retrieve the details of employees who have specified their qualification and qualification is 'MCA'
+db.employee.find({qualification: "MCA"})
+
+3) Retrieve total number of employees in each department
+db.employee.aggregate([{"$group" : {_id:"$deptId", count:{$sum:1}}}])
+
+4) Retrieve the details of female employees whose salary is greater than average salary of all 
+the employees working in finance department
+db.employee.find({$and: [{gender: "female"}, {salary: {$gt: db.employee.aggregate([{"$match": {deptId: "dept1"}}, {"$group" : {_id:"$deptId", avg:{$avg:"$salary"}}}]).toArray()[0].avg}}]})
+
+5) List the details of employees working on all the projects controlled by specific department
+
+6) Retrieve the details of employee who have worked for maximum hours on each project
